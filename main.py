@@ -11,6 +11,11 @@ import torch
 from sklearn.metrics.pairwise import cosine_similarity
 from docx import Document  # Для роботи з DOCX
 import nest_asyncio
+import keep_alive
+
+keep_alive.keep_alive()
+
+
 
 # Ініціалізація Nest Asyncio
 nest_asyncio.apply()
