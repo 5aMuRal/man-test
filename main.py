@@ -118,7 +118,7 @@ async def main():
     from hypercorn.asyncio import serve
     from hypercorn.config import Config
     config = Config()
-    config.bind = ["0.0.0.0:5000"]  # Вказуємо правильний порт для прослуховування
+    config.bind = ["0.0.0.0:8080"]  # Вказуємо правильний порт для прослуховування
 
     # Ініціалізація Telegram бота
     global application
