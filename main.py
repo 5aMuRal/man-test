@@ -12,28 +12,28 @@ from sklearn.metrics.pairwise import cosine_similarity
 from docx import Document  # Для роботи з DOCX
 import nest_asyncio
 
-# Нест
+# Ініціалізація Nest Asyncio
 nest_asyncio.apply()
 
-# Фласк
+# Ініціалізація Flask
 flask_app = Flask(__name__)
 
-# Апішка чат гпт
+# Ініціалізація OpenAI API
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     raise ValueError("OPENAI_API_KEY не встановлено!")
 
-# Токен тєлєга (змінна)
+# Ініціалізація Telegram Token
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 if not TELEGRAM_TOKEN:
     raise ValueError("TELEGRAM_TOKEN не встановлено!")
 
-# Вебхуки
+# URL для вебхуків
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Наприклад, https://ваш-домен.com/telegram-webhook
 if not WEBHOOK_URL:
     raise ValueError("WEBHOOK_URL не встановлено!")
 
-# Запити вебхуків
+# Маршрут для отримання запитів вебхука
 @flask_app.route("/telegram-webhook", methods=["POST"])
 def webhook():
     if request.method == "POST":
@@ -41,17 +41,17 @@ def webhook():
         application.update_queue.put(json_update)
         return "OK", 200
 
-# Підключення трансформера
+# Ініціалізація моделі для порівняння текстів
 tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/paraphrase-MiniLM-L6-v2")
 model = AutoModel.from_pretrained("sentence-transformers/paraphrase-MiniLM-L6-v2")
 
-# Ліміт фласк
+# Обмеження розміру файлу для Flask
 @flask_app.before_request
 def limit_file_size():
     if request.content_length and request.content_length > 16 * 1024 * 1024:  # 16 MB
         abort(413, description="Файл занадто великий.")
 
-# ПДФ
+# Функція для читання PDF
 def read_pdf(file) -> str:
     try:
         from PyPDF2 import PdfReader
@@ -61,7 +61,7 @@ def read_pdf(file) -> str:
     except Exception as e:
         return f"Помилка обробки PDF: {str(e)}"
 
-# Ворд
+# Функція для читання DOCX
 def read_docx(file) -> str:
     try:
         document = Document(file)
@@ -70,14 +70,14 @@ def read_docx(file) -> str:
     except Exception as e:
         return f"Помилка обробки DOCX: {str(e)}"
 
-# ТХТ
+# Функція для читання TXT
 def read_txt(file) -> str:
     try:
         return file.read().decode("utf-8")
     except Exception as e:
         return f"Помилка обробки TXT: {str(e)}"
 
-# Шлях збереження файлів фласк
+# Flask маршрут для завантаження файлів
 @flask_app.route('/upload/', methods=['POST'])
 def upload_file():
     try:
@@ -98,13 +98,13 @@ def upload_file():
     except Exception as e:
         return jsonify({"detail": f"Помилка: {str(e)}"}), 500
 
-# Команда старт, кнопки
+# Telegram бот
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [["Текстове повідомлення", "Текстовий документ"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text("Привіт! Виберіть тип задачі:", reply_markup=reply_markup)
 
-# Обробка текстів 
+# Функція для обробки текстів
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Ви написали: {update.message.text}")
 
@@ -113,25 +113,25 @@ async def main():
     from hypercorn.asyncio import serve
     from hypercorn.config import Config
     config = Config()
-    config.bind = ["0.0.0.0:5000"]  
+    config.bind = ["0.0.0.0:5000"]  # Вказуємо правильний порт для прослуховування
 
-    # Запуск бота
+    # Ініціалізація Telegram бота
+    global application
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
-    # Видалення старих вебхуків
+    # Відключаємо будь-який старий вебхук перед налаштуванням нового
     application.bot.delete_webhook()
 
+    # Додаємо хендлери для команд та повідомлень
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
-    # Фласк сєрвак
+    # Запускаємо Flask сервер для вебхуків
     flask_task = serve(flask_app, config)
     
-    # Запуск бота через поллінг
-    telegram_task = application.run_polling(close_loop=False)
-
-    await asyncio.gather(flask_task, telegram_task)
+    # Запуск Telegram бота через вебхук
+    await asyncio.gather(flask_task)
 
 if __name__ == "__main__":
-    application.bot.set_webhook(WEBHOOK_URL + "/telegram-webhook") # Для використання вебхука замість polling
+    application.bot.set_webhook(WEBHOOK_URL + "/telegram-webhook")  # Для використання вебхука замість polling
     asyncio.run(main())
