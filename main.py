@@ -13,9 +13,8 @@ from docx import Document  # Для роботи з DOCX
 import nest_asyncio
 import keep_alive
 
+# Запускаємо keep_alive для підтримки активності серверу
 keep_alive.keep_alive()
-
-
 
 # Ініціалізація Nest Asyncio
 nest_asyncio.apply()
@@ -118,7 +117,7 @@ async def main():
     from hypercorn.asyncio import serve
     from hypercorn.config import Config
     config = Config()
-    config.bind = ["0.0.0.0:8080"]  # Вказуємо правильний порт для прослуховування
+    config.bind = ["0.0.0.0:8080"]  # Використовуємо порт, на якому працює keep_alive
 
     # Ініціалізація Telegram бота
     global application
