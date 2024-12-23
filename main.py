@@ -129,7 +129,7 @@ async def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     # Запускаємо Flask сервер на порті 8080 для вебхуків
-    flask_app.run(host="0.0.0.0", port=80, threaded=True)
+    flask_app.run(host="0.0.0.0", port=8081, threaded=True)
 
 if __name__ == "__main__":
     asyncio.run(main())
