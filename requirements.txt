@@ -9,6 +9,5 @@ pypdf2
 python-docx
 nest_asyncio
 logging
-os
 asyncio
 io
