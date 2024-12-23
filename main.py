@@ -126,5 +126,5 @@ async def main():
     await asyncio.gather(flask_task, telegram_task)
 
 if __name__ == "__main__":
-    application.bot.set_webhook(WEBHOOK_URL + "/telegram-webhook") #СПРОБУВАТИ ЗАКОМЕНТУВАТИ
+    # application.bot.set_webhook(WEBHOOK_URL + "/telegram-webhook") #СПРОБУВАТИ ЗАКОМЕНТУВАТИ
     asyncio.run(main())
