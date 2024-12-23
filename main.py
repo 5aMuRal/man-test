@@ -113,18 +113,25 @@ async def main():
     from hypercorn.asyncio import serve
     from hypercorn.config import Config
     config = Config()
-    config.bind = ["0.0.0.0:5000"]
+    config.bind = ["0.0.0.0:5000"]  # Вказуємо правильний порт для прослуховування
 
     # Telegram бот
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+
+    # Відключаємо будь-який старий вебхук перед налаштуванням нового
+    application.bot.delete_webhook()
+
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
+    # Запускаємо Flask сервер для вебхуків
     flask_task = serve(flask_app, config)
+    
+    # Запуск Telegram бота через polling
     telegram_task = application.run_polling(close_loop=False)
 
     await asyncio.gather(flask_task, telegram_task)
 
 if __name__ == "__main__":
-    # application.bot.set_webhook(WEBHOOK_URL + "/telegram-webhook") #СПРОБУВАТИ ЗАКОМЕНТУВАТИ
+    # application.bot.set_webhook(WEBHOOK_URL + "/telegram-webhook") # Для використання вебхука замість polling
     asyncio.run(main())
