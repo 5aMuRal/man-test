@@ -126,6 +126,9 @@ async def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
+    # Встановлюємо вебхук після ініціалізації Telegram бота
+    application.bot.set_webhook(WEBHOOK_URL + "/telegram-webhook")  # Для використання вебхука замість polling
+
     # Запускаємо Flask сервер для вебхуків
     flask_task = serve(flask_app, config)
     
@@ -133,5 +136,4 @@ async def main():
     await asyncio.gather(flask_task)
 
 if __name__ == "__main__":
-    application.bot.set_webhook(WEBHOOK_URL + "/telegram-webhook")  # Для використання вебхука замість polling
     asyncio.run(main())
