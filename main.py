@@ -119,15 +119,15 @@ async def main():
     global application
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
-    # Відключаємо будь-який старий вебхук перед налаштуванням нового
-    application.bot.delete_webhook()
+    # Відключаємо старий вебхук перед налаштуванням нового
+    await application.bot.delete_webhook()
+
+    # Налаштовуємо новий вебхук
+    await application.bot.set_webhook(WEBHOOK_URL + "/telegram-webhook")  # Для використання вебхука замість polling
 
     # Додаємо хендлери для команд та повідомлень
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-
-    # Встановлюємо вебхук після ініціалізації Telegram бота
-    application.bot.set_webhook(WEBHOOK_URL + "/telegram-webhook")  # Для використання вебхука замість polling
 
     # Запускаємо Flask сервер для вебхуків
     flask_task = serve(flask_app, config)
