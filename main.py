@@ -114,11 +114,6 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Основний цикл
 async def main():
-    from hypercorn.asyncio import serve
-    from hypercorn.config import Config
-    config = Config()
-    config.bind = ["0.0.0.0:8080"]  # Використовуємо порт, на якому працює keep_alive
-
     # Ініціалізація Telegram бота
     global application
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
@@ -133,11 +128,8 @@ async def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
-    # Запускаємо Flask сервер для вебхуків
-    flask_task = serve(flask_app, config)
-    
-    # Запуск Telegram бота через вебхук
-    await asyncio.gather(flask_task)
+    # Запускаємо Flask сервер на порті 8080 для вебхуків
+    flask_app.run(host="0.0.0.0", port=8081, threaded=True)
 
 if __name__ == "__main__":
     asyncio.run(main())
