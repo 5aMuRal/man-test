@@ -140,8 +140,11 @@ def main():
     flask_thread.daemon = True  # Встановлюємо потік як демон для коректного завершення
     flask_thread.start()
 
-    # Запускаємо Telegram бота
-    asyncio.run(telegram_main())
+    # Запускаємо Telegram бота без закриття поточного циклу
+    asyncio.get_event_loop().create_task(telegram_main())
+
+    # Продовжуємо працювати в поточному event loop
+    asyncio.get_event_loop().run_forever()
 
 if __name__ == "__main__":
     main()
