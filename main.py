@@ -53,6 +53,36 @@ def webhook():
 tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/paraphrase-MiniLM-L6-v2")
 model = AutoModel.from_pretrained("sentence-transformers/paraphrase-MiniLM-L6-v2")
 
+# Функція для перевірки тексту на унікальність
+async def check_uniqueness(text: str) -> str:
+    try:
+        # Використання OpenAI API для аналізу тексту
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "Ти експерт з аналізу тексту. Визнач, чи є цей текст унікальним, чи він може бути скопійованим з інших джерел."},
+                {"role": "user", "content": text}
+            ],
+            max_tokens=500,
+            temperature=0.3
+        )
+        # Отримуємо відповідь
+        analysis = response["choices"][0]["message"]["content"]
+        return analysis
+    except Exception as e:
+        return f"Помилка аналізу: {str(e)}"
+
+# Обробка тексту, надісланого до Telegram
+async def process_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_text = update.message.text
+    await update.message.reply_text("Перевіряю текст на унікальність, зачекайте...")
+    result = await check_uniqueness(user_text)
+    await update.message.reply_text(f"Результат аналізу:\n{result}")
+
+# Додаємо хендлер для текстових повідомлень у Telegram
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_text))
+
+
 # Обмеження розміру файлу для Flask
 @flask_app.before_request
 def limit_file_size():
