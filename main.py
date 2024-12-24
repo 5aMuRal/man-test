@@ -11,7 +11,7 @@ import torch
 from sklearn.metrics.pairwise import cosine_similarity
 from docx import Document  # Для роботи з DOCX
 import nest_asyncio
-# import keep_alive
+from threading import Thread
 
 # Запускаємо keep_alive для підтримки активності серверу
 # keep_alive.keep_alive()
@@ -38,12 +38,9 @@ if not WEBHOOK_URL:
     raise ValueError("WEBHOOK_URL не встановлено!")
 
 # Маршрут для отримання запитів вебхука
-@flask_app.route("/telegram-webhook", methods=["POST"])
+@flask_app.route('/telegram-webhook', methods=['POST'])
 def webhook():
-    if request.method == "POST":
-        json_update = request.get_json()
-        application.update_queue.put(json_update)
-        return "OK", 200
+    return "OK", 200
 
 # Ініціалізація моделі для порівняння текстів
 tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/paraphrase-MiniLM-L6-v2")
@@ -112,8 +109,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Ви написали: {update.message.text}")
 
-# Основний цикл
-async def main():
+# Основний цикл для Telegram бота
+async def telegram_main():
     # Ініціалізація Telegram бота
     global application
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
@@ -128,8 +125,23 @@ async def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
-    # Запускаємо Flask сервер на порті 8080 для вебхуків
-    flask_app.run(host="0.0.0.0", port=5000, threaded=True)
+    # Запускаємо Telegram бота
+    await application.run_polling()
+
+# Функція для запуску Flask
+def flask_main():
+    port = int(os.getenv("PORT", 5000))  # Порт задається Render через змінну PORT
+    flask_app.run(host="0.0.0.0", port=port, threaded=True)
+
+# Основна функція
+def main():
+    # Запускаємо Flask сервер в окремому потоці
+    flask_thread = Thread(target=flask_main)
+    flask_thread.daemon = True  # Встановлюємо потік як демон для коректного завершення
+    flask_thread.start()
+
+    # Запускаємо Telegram бота
+    asyncio.run(telegram_main())
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
