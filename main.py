@@ -14,17 +14,18 @@ nest_asyncio.apply()
 # Ініціалізація Flask
 flask_app = Flask(__name__)
 
-# API ключі
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
+# API ключ OpenAI
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
     raise ValueError("OPENAI_API_KEY не встановлено!")
-openai.api_key = OPENAI_API_KEY
 
+# Telegram Token
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 if not TELEGRAM_TOKEN:
     raise ValueError("TELEGRAM_TOKEN не встановлено!")
 
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Наприклад, https://ваш-домен.com/telegram-webhook
+# URL для вебхуків
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 if not WEBHOOK_URL:
     raise ValueError("WEBHOOK_URL не встановлено!")
 
@@ -36,20 +37,20 @@ def webhook():
         application.update_queue.put(json_update)
         return "OK", 200
 
-# Функція для перевірки тексту через OpenAI API
-def analyze_text_with_openai(text: str) -> str:
+# Функція для оцінки унікальності тексту через OpenAI
+def check_text_uniqueness_openai(text: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Ви аналізуєте текст на унікальність, зміст та відповідність темі."},
-                {"role": "user", "content": text}
-            ]
+        response = openai.Completion.create(
+            model="text-davinci-003",
+            prompt=f"Оцініть унікальність наступного тексту: {text}\n"
+                   f"Відповідь повинна бути у відсотках унікальності. Якщо текст є звичайним плагіатом, вкажіть це.",
+            max_tokens=100,
+            temperature=0.7
         )
-        analysis_result = response["choices"][0]["message"]["content"]
-        return analysis_result
+        result = response.choices[0].text.strip()
+        return f"Результат оцінки унікальності: {result}"
     except Exception as e:
-        return f"Помилка OpenAI API: {str(e)}"
+        return f"Помилка при перевірці тексту: {str(e)}"
 
 # Telegram бот
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -60,8 +61,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Обробка текстових повідомлень
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
-    await update.message.reply_text("Текст отримано. Аналізую...")
-    result = analyze_text_with_openai(user_text)
+    await update.message.reply_text("Текст отримано. Перевіряю унікальність...")
+    result = check_text_uniqueness_openai(user_text)
     await update.message.reply_text(result)
 
 # Flask маршрут для завантаження файлів
@@ -77,7 +78,7 @@ def upload_file():
         else:
             return jsonify({"detail": "Формат файлу не підтримується"}), 400
 
-        result = analyze_text_with_openai(text)
+        result = check_text_uniqueness_openai(text)
         return jsonify({"filename": file.filename, "result": result})
     except Exception as e:
         return jsonify({"detail": f"Помилка: {str(e)}"}), 500
