@@ -40,7 +40,14 @@ if not WEBHOOK_URL:
 # Маршрут для отримання запитів вебхука
 @flask_app.route('/telegram-webhook', methods=['POST'])
 def webhook():
-    return "OK", 200
+    try:
+        json_str = request.get_data().decode("UTF-8")
+        update = Update.de_json(json_str, application.bot)
+        application.update_queue.put(update)  # Отправка обновления в очередь
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        print(f"Error processing webhook: {e}")
+        return jsonify({"status": "error"}), 500
 
 # Ініціалізація моделі для порівняння текстів
 tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/paraphrase-MiniLM-L6-v2")
