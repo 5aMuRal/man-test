@@ -125,8 +125,7 @@ async def telegram_main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
-    # Запускаємо Telegram бота
-    await application.run_polling()
+    # Telegram буде приймати оновлення через вебхук, а не через polling
 
 # Функція для запуску Flask
 def flask_main():
@@ -140,7 +139,7 @@ def main():
     flask_thread.daemon = True  # Встановлюємо потік як демон для коректного завершення
     flask_thread.start()
 
-    # Запускаємо Telegram бота без закриття поточного циклу
+    # Запускаємо Telegram бота без polling, використовуючи вебхук
     asyncio.get_event_loop().create_task(telegram_main())
 
     # Продовжуємо працювати в поточному event loop
