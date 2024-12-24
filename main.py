@@ -80,7 +80,7 @@ async def process_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Результат аналізу:\n{result}")
 
 # Додаємо хендлер для текстових повідомлень у Telegram
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_text))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_text))
 
 
 # Обмеження розміру файлу для Flask
